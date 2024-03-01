@@ -9,7 +9,7 @@ use std::time::Duration;
 
 pub type Result<T> = result::Result<T, Box<dyn Error>>;
 
-const TIME_UNIT: u64 = 50;
+const DIT: u64 = 50;
 const TONE_FREQUENCY: f32 = 800.00;
 
 macro_rules! err {
@@ -25,11 +25,11 @@ fn load_dictionary<P: AsRef<Path>>(path: P) -> Result<HashMap<char, String>> {
     Ok(dictionary)
 }
 
-fn say(signal: &char) -> Result<()> {
+fn speak_letter(signal: &char) -> Result<()> {
     let (_stream, stream_handle) = OutputStream::try_default()?;
     let duration = match signal {
-        '-' => 3 * TIME_UNIT, // 0.5s
-        '.' => TIME_UNIT,     // 0.2s
+        '-' => 3 * DIT, // 0.5s
+        '.' => DIT,     // 0.2s
         _ => return err!("test"),
     };
     let source = SineWave::new(TONE_FREQUENCY)
@@ -49,13 +49,19 @@ pub fn speak(code: &str) -> Result<()> {
     stdout().flush()?; // write now
                        // load dictionary
     let dictionary = load_dictionary("dictionary.json")?;
-    for c in code.chars().filter(|c| !c.is_whitespace()) {
-        let letter = dictionary
-            .get(&c)
-            .ok_or(format!("dictionary does not contain letter {c}"))?;
-        for signal in letter.chars() {
-            say(&signal)?;
-            std::thread::sleep(Duration::from_millis(TIME_UNIT));
+    for c in code.chars() {
+        if c.is_whitespace() {
+            std::thread::sleep(Duration::from_millis(3 * DIT)); // three dits between words
+        } else if c == '.' {
+            std::thread::sleep(Duration::from_millis(7 * DIT)); // seven dits between sentences
+        } else {
+            let letter = dictionary
+                .get(&c)
+                .ok_or(format!("dictionary does not contain letter {c}"))?;
+            for signal in letter.chars() {
+                speak_letter(&signal)?;
+                std::thread::sleep(Duration::from_millis(DIT));
+            }
         }
     }
     write!(stdout(), "Done!\n")?;

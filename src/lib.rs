@@ -30,7 +30,7 @@ fn speak_letter(signal: &char) -> Result<()> {
     let duration = match signal {
         '-' => 3 * DIT, // 0.5s
         '.' => DIT,     // 0.2s
-        _ => return err!("test"),
+        _ => return err!("Signal unrecognized"),
     };
     let source = SineWave::new(TONE_FREQUENCY)
         // Play for 1 second
